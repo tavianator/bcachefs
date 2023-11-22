@@ -845,6 +845,9 @@ void bch2_trans_unlock(struct btree_trans *trans)
 	__bch2_trans_unlock(trans);
 
 	trans_set_unlocked(trans);
+
+	if (!trans->is_initial_gc)
+		bch2_assert_btree_nodes_not_locked();
 }
 
 void bch2_trans_unlock_long(struct btree_trans *trans)
