@@ -41,6 +41,7 @@
 #include <linux/limits.h>
 #include <linux/log2.h>
 #include <linux/math.h>
+#include <linux/spinlock_types.h>
 #include <linux/types.h>
 
 struct genradix_root;
@@ -93,6 +94,7 @@ struct genradix_node {
 
 struct __genradix {
 	struct genradix_root		*root;
+	rwlock_t			free_lock;
 };
 
 /*
@@ -103,7 +105,8 @@ struct __genradix {
 	{							\
 		.tree = {					\
 			.root = NULL,				\
-		}						\
+			.free_lock = __RW_LOCK_UNLOCKED(genradix_free_lock),\
+		},						\
 	}
 
 /*
@@ -133,6 +136,9 @@ struct {							\
 do {								\
 	*(_radix) = (typeof(*_radix)) __GENRADIX_INITIALIZER;	\
 } while (0)
+
+void __genradix_free_unlocked(struct __genradix *);
+#define genradix_free_unlocked(_radix)	__genradix_free_unlocked(&(_radix)->tree)
 
 void __genradix_free(struct __genradix *);
 
