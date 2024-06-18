@@ -54,8 +54,14 @@ static inline void __call_rcu(struct srcu_struct *ssp, struct rcu_head *rhp,
 }
 
 struct rcu_pending_seq {
+	/*
+	 * We're using a radix tree like a vector - we're just pushing elements
+	 * onto the end; we're using a radix tree instead of an actual vector to
+	 * avoid reallocation overhead
+	 */
 	GENRADIX(struct rcu_head *)	objs;
 	size_t				nr;
+	/* Overflow list, if radix tree allocation fails */
 	struct rcu_head			*list;
 	unsigned long			seq;
 };
@@ -97,8 +103,8 @@ static void rcu_pending_rcu_cb(struct rcu_head *rcu)
 
 static noinline void __rcu_pending_arm_cb(struct rcu_pending *pending, struct rcu_pending_pcpu *p)
 {
-	__call_rcu(pending->srcu, &p->rcu, rcu_pending_rcu_cb);
 	p->rcu_armed = true;
+	__call_rcu(pending->srcu, &p->rcu, rcu_pending_rcu_cb);
 }
 
 static inline void rcu_pending_arm_cb(struct rcu_pending *pending, struct rcu_pending_pcpu *p)
