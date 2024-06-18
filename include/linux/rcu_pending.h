@@ -10,6 +10,7 @@ struct rcu_pending_pcpu;
 struct rcu_pending {
 	struct rcu_pending_pcpu __percpu *p;
 	struct srcu_struct		*srcu;
+	unsigned long			*seq;
 	rcu_pending_process_fn		process;
 };
 

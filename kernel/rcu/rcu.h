@@ -207,6 +207,8 @@ static inline unsigned long rcu_seq_diff(unsigned long new, unsigned long old)
 	return ((rnd_diff - RCU_SEQ_STATE_MASK - 1) >> RCU_SEQ_CTR_SHIFT) + 2;
 }
 
+unsigned long *rcu_get_seq(void);
+
 /*
  * debug_rcu_head_queue()/debug_rcu_head_unqueue() are used internally
  * by call_rcu() and rcu callback execution, and are therefore not part

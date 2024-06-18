@@ -3348,6 +3348,11 @@ unsigned long get_state_synchronize_rcu(void)
 }
 EXPORT_SYMBOL_GPL(get_state_synchronize_rcu);
 
+unsigned long *rcu_get_seq(void)
+{
+	return &rcu_state.gp_seq_polled;
+}
+
 /**
  * get_state_synchronize_rcu_full - Snapshot RCU state, both normal and expedited
  * @rgosp: location to place combined normal/expedited grace-period state
