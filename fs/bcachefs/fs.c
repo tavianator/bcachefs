@@ -1065,6 +1065,16 @@ retry:
 	       !(ret = bkey_err(k))) {
 		enum btree_id data_btree = BTREE_ID_extents;
 
+		{
+			struct printbuf buf = PRINTBUF;
+
+			bch2_bpos_to_text(&buf, iter.pos);
+			prt_char(&buf, ' ');
+			bch2_bkey_val_to_text(&buf, c, k);
+			pr_debug("%s", buf.buf);
+			printbuf_exit(&buf);
+		}
+
 		if (!bkey_extent_is_data(k.k) &&
 		    k.k->type != KEY_TYPE_reservation) {
 			bch2_btree_iter_advance(&iter);
@@ -1074,18 +1084,35 @@ retry:
 		offset_into_extent	= iter.pos.offset -
 			bkey_start_offset(k.k);
 		sectors			= k.k->size - offset_into_extent;
+		BUG_ON(!sectors);
+
+		pr_debug("offset_into_extent %u sectors %u", offset_into_extent, sectors);
 
 		bch2_bkey_buf_reassemble(&cur, c, k);
 
-		ret = bch2_read_indirect_extent(trans, &data_btree,
-					&offset_into_extent, &cur);
-		if (ret)
-			break;
+		if (k.k->type == KEY_TYPE_reflink_p) {
+			ret = bch2_read_indirect_extent(trans, &data_btree,
+						&offset_into_extent, &cur);
+			if (ret)
+				break;
+
+			k = bkey_i_to_s_c(cur.k);
+			bch2_bkey_buf_realloc(&prev, c, k.k->u64s);
+
+			sectors = min(sectors, k.k->size - offset_into_extent);
+			BUG_ON(!sectors);
+
+			{
+				struct printbuf buf = PRINTBUF;
+
+				bch2_bkey_val_to_text(&buf, c, k);
+				pr_debug("%s", buf.buf);
+				printbuf_exit(&buf);
+				pr_debug("offset_into_extent %u sectors %u", offset_into_extent, sectors);
+			}
+		}
 
 		k = bkey_i_to_s_c(cur.k);
-		bch2_bkey_buf_realloc(&prev, c, k.k->u64s);
-
-		sectors = min(sectors, k.k->size - offset_into_extent);
 
 		bch2_cut_front(POS(k.k->p.inode,
 				   bkey_start_offset(k.k) +
