@@ -76,6 +76,7 @@ static bool found_btree_node_is_readable(struct btree_trans *trans,
 		return ret;
 
 	f->sectors_written = b->written;
+	f->journal_seq = le64_to_cpu(b->data->keys.journal_seq);
 	six_unlock_read(&b->c.lock);
 
 	/*
@@ -105,7 +106,8 @@ static int found_btree_node_cmp_cookie(const void *_l, const void *_r)
 static int found_btree_node_cmp_time(const struct found_btree_node *l,
 				     const struct found_btree_node *r)
 {
-	return cmp_int(l->seq, r->seq);
+	return  cmp_int(l->seq, r->seq) ?:
+		cmp_int(l->journal_seq, r->seq);
 }
 
 static int found_btree_node_cmp_pos(const void *_l, const void *_r)
